@@ -1,26 +1,29 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Radar Chart Predictor</title>
+  <meta charset="UTF-8" />
+  <title>Radar Chart - Match Render</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background: #f0f8ff;
-      text-align: center;
+      font-family: sans-serif;
+      background-color: #f0f0f0;
       padding: 2rem;
+      text-align: center;
     }
-    textarea {
-      width: 80%;
-      height: 150px;
-    }
-    input {
+    textarea, input {
+      width: 90%;
+      margin: 0.5rem auto;
+      font-size: 1rem;
       padding: 0.5rem;
-      margin: 0.5rem;
+      border-radius: 8px;
     }
     button {
-      padding: 0.5rem 1rem;
       font-size: 1rem;
+      padding: 0.7rem 2rem;
+      border: none;
+      border-radius: 8px;
+      background-color: #2e7d32;
+      color: white;
       cursor: pointer;
     }
     img {
@@ -30,66 +33,50 @@
   </style>
 </head>
 <body>
-  <h1>Radar Chart Predictor</h1>
-  <p>Introduce los nombres de los equipos y el input de datos tipo <code>manu_ast</code>.</p>
-  
-  <input type="text" id="teamA" placeholder="Equipo A" />
-  <input type="text" id="teamB" placeholder="Equipo B" /><br/>
+  <h1>Radar Chart API ⚽</h1>
 
-  <textarea id="inputData" placeholder="Pega aquí los datos tipo manu_ast (JSON)"></textarea><br/>
+  <input id="teamA" placeholder="Nombre del equipo A" />
+  <input id="teamB" placeholder="Nombre del equipo B" />
 
-  <button onclick="generarGrafico()">Generar Radar Chart</button>
+  <p>Pega aquí el input tipo <code>[[[...], [...]], [[...], [...]]]</code></p>
+  <textarea id="inputData" rows="10" placeholder="Input de datos aquí..."></textarea>
+  <br />
+  <button onclick="enviar()">Generar gráfica</button>
 
   <div id="resultado">
-    <img id="grafico" style="display:none;" />
-    <p id="error" style="color:red;"></p>
+    <img id="outputImage" />
   </div>
 
   <script>
-    async function generarGrafico() {
-      const teamA = document.getElementById("teamA").value.trim();
-      const teamB = document.getElementById("teamB").value.trim();
-      const rawData = document.getElementById("inputData").value.trim();
+    async function enviar() {
+      const teamA = document.getElementById("teamA").value;
+      const teamB = document.getElementById("teamB").value;
+      const inputRaw = document.getElementById("inputData").value;
 
-      const errorBox = document.getElementById("error");
-      const grafico = document.getElementById("grafico");
-      errorBox.textContent = '';
-      grafico.style.display = 'none';
-
-      if (!teamA || !teamB || !rawData) {
-        errorBox.textContent = "Por favor llena todos los campos.";
-        return;
-      }
-
-      let parsedData;
+      let teamsData;
       try {
-        parsedData = JSON.parse(rawData);
+        teamsData = JSON.parse(inputRaw);
       } catch (e) {
-        errorBox.textContent = "Error en el formato JSON del input. Asegúrate de pegarlo correctamente.";
+        alert("⚠️ Input inválido. Asegúrate de que sea JSON válido.");
         return;
       }
 
-      try {
-        const response = await fetch("https://match-render.onrender.com/graficar", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            team_a_name: teamA,
-            team_b_name: teamB,
-            teams_data: parsedData
-          })
-        });
+      const response = await fetch("https://TU-BACKEND.onrender.com/graficar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          team_a_name: teamA,
+          team_b_name: teamB,
+          teams_data: teamsData
+        })
+      });
 
-        if (!response.ok) {
-          throw new Error("Error al generar el gráfico.");
-        }
-
+      if (response.ok) {
         const blob = await response.blob();
         const url = URL.createObjectURL(blob);
-        grafico.src = url;
-        grafico.style.display = 'block';
-      } catch (err) {
-        errorBox.textContent = err.message || "Algo salió mal.";
+        document.getElementById("outputImage").src = url;
+      } else {
+        alert("❌ Error al generar la gráfica.");
       }
     }
   </script>
