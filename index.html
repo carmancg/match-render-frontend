@@ -118,101 +118,71 @@
 
     <img id="outputImage" alt="Aquí aparecerá la gráfica" />
   </div>
-
   <script>
-    function cambiarModo() {
-      const modo = document.getElementById("modo").value;
-      document.getElementById("manual-input").style.display = modo === "manual" ? "block" : "none";
-      document.getElementById("json-input").style.display = modo === "json" ? "block" : "none";
-    }
-
-    function limpiarCampos() {
-      document.getElementById("teamA").value = "";
-      document.getElementById("teamB").value = "";
-      document.getElementById("inputData").value = "";
-
-      const celdas = document.querySelectorAll("#tabla-datos input");
-      celdas.forEach(input => input.value = "");
-
-      document.getElementById("outputImage").src = "";
-      document.getElementById("outputImage").alt = "Aquí aparecerá la gráfica";
-    }
-
-    function cargarDemo() {
-      const demo = [
-        [[2,17,5,54,503,90,11,4],[0,12,3,46,429,88,11,2]],
-        [[2,19,6,63,500,87,16,0],[1,7,2,37,292,79,14,3]],
-        [[4,22,12,64,790,91,21,4],[1,8,5,36,450,84,14,7]],
-        [[4,17,7,69,681,92,9,4],[0,11,2,31,306,83,9,0]],
-        [[2,11,5,45,354,76,12,0],[0,13,5,55,406,82,13,3]],
-        [[4,19,9,67,733,93,9,5],[0,8,3,33,360,85,10,3]]
-      ];
-
-      document.getElementById("teamA").value = "Chelsea";
-      document.getElementById("teamB").value = "PSG";
-
-      const filas = document.querySelectorAll("#tabla-datos tr");
-      for (let i = 0; i < 6; i++) {
-        const celdas = filas[i].querySelectorAll("input");
-        celdas[0].value = demo[i][0].join(", ");
-        celdas[1].value = demo[i][1].join(", ");
+    function leerTablaComoJSON() {
+      const rows = document.querySelectorAll(".tabla-estadisticas tr");
+      const equipoA = [];
+      const equipoB = [];
+  
+      for (let i = 1; i < rows.length; i++) {
+        const inputs = rows[i].querySelectorAll("input");
+        if (inputs.length !== 16) continue; // Asegúrate de que haya todos los campos
+  
+        const filaA = [];
+        const filaB = [];
+  
+        for (let j = 0; j < 8; j++) {
+          const val = parseFloat(inputs[j].value);
+          filaA.push(isNaN(val) ? 0 : val);
+        }
+  
+        for (let j = 8; j < 16; j++) {
+          const val = parseFloat(inputs[j].value);
+          filaB.push(isNaN(val) ? 0 : val);
+        }
+  
+        if (i <= 3) {
+          equipoA.push(filaA);
+          equipoA.push(filaB);
+        } else {
+          equipoB.push(filaA);
+          equipoB.push(filaB);
+        }
       }
+  
+      return [equipoA, equipoB];
     }
-
+  
     async function enviarDatos() {
-      const modo = document.getElementById("modo").value;
+      const modo = document.querySelector('input[name="modo"]:checked').value;
       const team_a_name = document.getElementById("teamA").value;
       const team_b_name = document.getElementById("teamB").value;
+  
       let teams_data;
-
-      if (!team_a_name || !team_b_name) {
-        alert("Por favor ingresa los nombres de ambos equipos.");
-        return;
-      }
-
-      if (modo === "manual") {
-        const filas = document.querySelectorAll("#tabla-datos tr");
-        teams_data = [[], []];
-
-        for (let i = 0; i < 6; i++) {
-          const celdas = filas[i].querySelectorAll("input");
-          try {
-            const datosA = JSON.parse("[" + celdas[0].value + "]");
-            const datosB = JSON.parse("[" + celdas[1].value + "]");
-            if (i < 3) {
-              teams_data[0].unshift(datosA);
-              teams_data[1].unshift(datosB);
-            } else {
-              teams_data[1].unshift(datosA);
-              teams_data[0].unshift(datosB);
-            }
-          } catch {
-            alert("Error en los datos de la fila " + (i + 1));
-            return;
-          }
-        }
+  
+      if (modo === "tabla") {
+        teams_data = leerTablaComoJSON();
       } else {
         try {
           teams_data = JSON.parse(document.getElementById("inputData").value);
-        } catch {
-          alert("JSON inválido.");
+        } catch (e) {
+          alert("El JSON es inválido");
           return;
         }
       }
-
+  
       const response = await fetch("https://match-render.onrender.com/graficar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ team_a_name, team_b_name, teams_data })
+        body: JSON.stringify({ team_a_name, team_b_name, teams_data }),
       });
-
+  
       if (response.ok) {
         const blob = await response.blob();
         const url = URL.createObjectURL(blob);
         document.getElementById("outputImage").src = url;
       } else {
-        document.getElementById("outputImage").alt = "Error al generar la imagen.";
-        alert("Error al generar la imagen.");
+        alert("Error al generar la imagen");
       }
     }
   </script>
