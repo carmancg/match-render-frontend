@@ -119,49 +119,78 @@
     <img id="outputImage" alt="Aquí aparecerá la gráfica" />
   </div>
   <script>
+    function cambiarModo() {
+      const modo = document.getElementById("modo").value;
+      document.getElementById("manual-input").style.display = modo === "manual" ? "block" : "none";
+      document.getElementById("json-input").style.display = modo === "json" ? "block" : "none";
+    }
+  
     function leerTablaComoJSON() {
-      const rows = document.querySelectorAll(".tabla-estadisticas tr");
+      const filas = document.querySelectorAll("#tabla-datos tr");
       const equipoA = [];
       const equipoB = [];
   
-      for (let i = 1; i < rows.length; i++) {
-        const inputs = rows[i].querySelectorAll("input");
-        if (inputs.length !== 16) continue; // Asegúrate de que haya todos los campos
+      for (let i = 0; i < filas.length; i++) {
+        const inputs = filas[i].querySelectorAll("input");
+        if (inputs.length !== 2) continue;
   
-        const filaA = [];
-        const filaB = [];
+        const equipo = inputs[0].value.split(',').map(v => parseFloat(v.trim()));
+        const rival = inputs[1].value.split(',').map(v => parseFloat(v.trim()));
   
-        for (let j = 0; j < 8; j++) {
-          const val = parseFloat(inputs[j].value);
-          filaA.push(isNaN(val) ? 0 : val);
+        // Validación básica
+        if (equipo.length !== 8 || rival.length !== 8) {
+          alert(`Error en fila ${i + 1}: cada campo debe tener 8 números separados por coma.`);
+          return null;
         }
   
-        for (let j = 8; j < 16; j++) {
-          const val = parseFloat(inputs[j].value);
-          filaB.push(isNaN(val) ? 0 : val);
-        }
-  
-        if (i <= 3) {
-          equipoA.push(filaA);
-          equipoA.push(filaB);
+        if (i < 3) {
+          equipoA.push(equipo);
+          equipoA.push(rival);
         } else {
-          equipoB.push(filaA);
-          equipoB.push(filaB);
+          equipoB.push(equipo);
+          equipoB.push(rival);
         }
       }
   
       return [equipoA, equipoB];
     }
   
+    function limpiarCampos() {
+      document.querySelectorAll("input[type='text'], textarea").forEach(input => input.value = "");
+      document.getElementById("outputImage").src = "";
+    }
+  
+    function cargarDemo() {
+      document.getElementById("teamA").value = "Chelsea";
+      document.getElementById("teamB").value = "PSG";
+  
+      const datosDemo = [
+        ["2,17,5,54,503,90,11,4", "0,12,3,46,429,88,11,2"],
+        ["2,19,6,63,500,87,16,0", "1,7,2,37,292,79,14,3"],
+        ["4,22,12,64,790,91,21,4", "1,8,5,36,450,84,14,7"],
+        ["4,17,7,69,681,92,9,4", "0,11,2,31,306,83,9,0"],
+        ["2,11,5,45,354,76,12,0", "0,13,5,55,406,82,13,3"],
+        ["4,19,9,67,733,93,9,5", "0,8,3,33,360,85,10,3"]
+      ];
+  
+      const filas = document.querySelectorAll("#tabla-datos tr");
+      datosDemo.forEach((valores, idx) => {
+        const inputs = filas[idx].querySelectorAll("input");
+        inputs[0].value = valores[0];
+        inputs[1].value = valores[1];
+      });
+    }
+  
     async function enviarDatos() {
-      const modo = document.querySelector('input[name="modo"]:checked').value;
-      const team_a_name = document.getElementById("teamA").value;
-      const team_b_name = document.getElementById("teamB").value;
+      const modo = document.getElementById("modo").value;
+      const team_a_name = document.getElementById("teamA").value.trim();
+      const team_b_name = document.getElementById("teamB").value.trim();
   
       let teams_data;
   
-      if (modo === "tabla") {
+      if (modo === "manual") {
         teams_data = leerTablaComoJSON();
+        if (!teams_data) return;  // Ya mostró error
       } else {
         try {
           teams_data = JSON.parse(document.getElementById("inputData").value);
